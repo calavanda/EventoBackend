@@ -31,10 +31,17 @@ app.use(express.json());
 
 // Routes
 app.use("/api", apiRoutes);
+console.log('API routes loaded successfully on /api');
 
 // Health check for Railway
 app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "EventoBackend is running" });
+  res.json({ status: "ok", message: "EventoBackend is running", routes: ["/api/participants", "/api/stands", "/api/surveys", "/api/visits/scan", "/api/reports/stats", "/api/reports/stand-visits"] });
+});
+
+// Catch-all 404 handler (helps diagnose missing routes)
+app.use((req, res) => {
+  console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
 const mongoUri = process.env.MONGODB_URI;
