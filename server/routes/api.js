@@ -69,6 +69,25 @@ router.post('/stands', async (req, res) => {
   }
 });
 
+router.put('/stands/:id', async (req, res) => {
+  try {
+    const estand = await Estand.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!estand) return res.status(404).json({ error: 'Estand no encontrado' });
+    res.json(estand);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar estand: ' + err.message });
+  }
+});
+
+router.delete('/stands/:id', async (req, res) => {
+  try {
+    await Estand.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Estand eliminado correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar estand: ' + err.message });
+  }
+});
+
 // --- VISITAS (Escáner QR) ---
 router.post('/visits/scan', async (req, res) => {
   try {
