@@ -42,7 +42,7 @@ server/
 
    ```bash
    git clone https://github.com/calavanda/EventoBackend
-   cd Francophonie-Backend
+   cd EventoBackend
    ```
 
 2. Instala las dependencias:
