@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
-const StandSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String },
-  qrCode: { type: String },
-  createdAt: { type: Date, default: Date.now }
+const EstandSchema = new mongoose.Schema({
+  nombre: { type: String, required: true },
+  responsable: { type: String, required: true },
+  ubicacion: { type: String },
+  descripcion: { type: String },
+  creadoEn: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Estand', StandSchema);
+module.exports = mongoose.model('Estand', EstandSchema);

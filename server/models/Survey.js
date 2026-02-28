@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
-const SurveySchema = new mongoose.Schema({
-  participant: { type: mongoose.Schema.Types.ObjectId, ref: 'Participante', required: true },
-  stand: { type: mongoose.Schema.Types.ObjectId, ref: 'Estand' },
-  rating: { type: Number, required: true },
-  feedback: { type: String },
-  createdAt: { type: Date, default: Date.now }
+const EncuestaSchema = new mongoose.Schema({
+  estand: { type: mongoose.Schema.Types.ObjectId, ref: 'Estand' },
+  p1: { type: Number },
+  p2: { type: Number },
+  p3: { type: Number },
+  p4: { type: Number },
+  p5: { type: Number },
+  comentarios: { type: String },
+  creadoEn: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Encuesta', SurveySchema);
+module.exports = mongoose.model('Encuesta', EncuestaSchema);

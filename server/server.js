@@ -6,20 +6,20 @@ const fs = require("fs");
 const dotenv = require("dotenv");
 const apiRoutes = require("./routes/api");
 
-// Only load .env file if it exists AND don't override existing env vars (Railway sets its own)
+// Solo carga el archivo .env si existe y no sobreescribe las variables de entorno (Railway establece sus propias)
 const envPath = path.join(__dirname, "..", ".env");
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath, override: false });
-  console.log('Loaded .env file (without overriding existing variables)');
+  console.log('Cargado el archivo .env (sin sobreescribir las variables de entorno existentes)');
 } else {
-  console.log('No .env file found, using environment variables from host');
+  console.log('No se encontró el archivo .env, usando variables de entorno del host');
 }
 
 const app = express();
-// Railway provides a PORT environment variable, we must use it if present
+// Railway proporciona una variable de entorno PORT, debemos usarla si está presente
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
-// Middleware - allow all to avoid CORS
+// Middleware - permitir todo para evitar CORS
 app.use(
   cors({
     origin: "*",
@@ -29,19 +29,19 @@ app.use(
 );
 app.use(express.json());
 
-// Routes
+// Rutas
 app.use("/api", apiRoutes);
-console.log('API routes loaded successfully on /api');
+console.log('Rutas API cargadas correctamente en /api');
 
-// Health check for Railway
+// Health check para Railway
 app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "EventoBackend is running", routes: ["/api/participants", "/api/stands", "/api/surveys", "/api/visits/scan", "/api/reports/stats", "/api/reports/stand-visits"] });
+  res.json({ status: "ok", message: "EventoBackend está corriendo", routes: ["/api/participants", "/api/stands", "/api/surveys", "/api/visits/scan", "/api/reports/stats", "/api/reports/stand-visits"] });
 });
 
-// Catch-all 404 handler (helps diagnose missing routes)
+// 404 (ayuda a diagnosticar rutas faltantes)
 app.use((req, res) => {
-  console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+  console.log(`404 - Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
 });
 
 const mongoUri = process.env.MONGODB_URI;
@@ -49,18 +49,18 @@ console.log('PORT:', PORT);
 console.log('MONGODB_URI exists:', !!mongoUri);
 
 if (!mongoUri) {
-  console.error("CRITICAL ERROR: MONGODB_URI environment variable is missing.");
-  console.error("Make sure you set MONGODB_URI in Railway's Variables tab.");
-  // Don't exit, just start the server without DB so we can see logs
+  console.error("ERROR CRÍTICO: La variable de entorno MONGODB_URI no existe.");
+  console.error("Asegúrate de configurar MONGODB_URI en la pestaña Variables de Railway.");
+  // No existe, solo inicia el servidor sin DB para poder ver los logs
 } else {
   mongoose
     .connect(mongoUri)
-    .then(() => console.log("Connected to MongoDB"))
+    .then(() => console.log("Conectado a MongoDB"))
     .catch((err) => {
-      console.error("MongoDB connection error details:", err.message);
+      console.error("Detalles del error de conexión a MongoDB:", err.message);
     });
 }
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
