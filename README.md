@@ -41,7 +41,7 @@ server/
 1. Clona el repositorio:
 
    ```bash
-   git clone <url-del-repositorio>
+   git clone https://github.com/calavanda/EventoBackend
    cd Francophonie-Backend
    ```
 
