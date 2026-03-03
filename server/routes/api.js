@@ -268,6 +268,7 @@ router.get('/reports/stand-analytics', async (req, res) => {
 
     // Gráfica de picos de visitas filtrado por hora (con zona horaria de México y desglosado por estand)
     const peakVisits = await Visita.aggregate([
+      { $match: { escaneadoEn: { $exists: true, $ne: null } } },
       {
         $project: {
           hour: { $hour: { date: "$escaneadoEn", timezone: "-06:00" } },
