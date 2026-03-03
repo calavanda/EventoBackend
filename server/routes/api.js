@@ -266,9 +266,68 @@ router.get('/reports/stand-analytics', async (req, res) => {
       { $sort: { avgRating: -1 } }
     ]);
 
-    res.json({ visitStats, surveyStats });
+    // Gráfica de picos de visitas filtrado por hora
+    const peakVisits = await Visita.aggregate([
+      {
+        $project: {
+          hour: { $hour: "$escaneadoEn" }
+        }
+      },
+      {
+        $group: {
+          _id: "$hour",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.json({ visitStats, surveyStats, peakVisits });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener analíticas: ' + err.message });
+  }
+});
+
+// --- ANALÍTICAS AVANZADAS ---
+
+// Cuántos visitantes únicos visitaron un stand (gráfica de visitantes vs visitas totales)
+router.get('/reports/visitor-stats', async (req, res) => {
+  try {
+    const stats = await Visita.aggregate([
+      {
+        $group: {
+          _id: '$estand',
+          totalVisits: { $sum: 1 },
+          uniqueVisitors: { $addToSet: '$participante' }
+        }
+      },
+      {
+        $project: {
+          estand: '$_id',
+          totalVisits: 1,
+          uniqueVisitorsCount: { $size: '$uniqueVisitors' }
+        }
+      },
+      { $lookup: { from: 'estands', localField: 'estand', foreignField: '_id', as: 'detalles' } },
+      { $unwind: { path: '$detalles', preserveNullAndEmptyArrays: true } },
+      { $project: { name: { $ifNull: ['$detalles.nombre', 'Desconocido'] }, totalVisits: 1, uniqueVisitorsCount: 1 } },
+      { $sort: { totalVisits: -1 } }
+    ]);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener estadísticas de visitantes: ' + err.message });
+  }
+});
+
+// Historial de visitas de un participante específico
+router.get('/reports/participant-history/:id', async (req, res) => {
+  try {
+    const history = await Visita.find({ participante: req.params.id })
+      .populate('estand', 'nombre')
+      .sort({ escaneadoEn: 1 });
+    res.json(history);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener historial: ' + err.message });
   }
 });
 

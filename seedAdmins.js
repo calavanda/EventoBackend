@@ -11,8 +11,12 @@ const participants = [
 
 async function seed() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Conectado a MongoDB');
+    const uri = process.env.MONGODB_URI;
+    if (!uri) throw new Error("MONGODB_URI no encontrada en el .env");
+    
+    console.log('Intentando conectar a MongoDB...');
+    await mongoose.connect(uri);
+    console.log('✅ Conectado a MongoDB');
     
     for (const p of participants) {
       await Admin.findOneAndUpdate(
