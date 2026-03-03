@@ -247,7 +247,7 @@ router.get('/reports/stand-visits', async (req, res) => {
   }
 });
 
-// --- ANALÍTICAS (Gráficas) ---
+// --- ANALÍTICAS (Gráficas de los estands) ---
 router.get('/reports/stand-analytics', async (req, res) => {
   try {
     const visitStats = await Visita.aggregate([
