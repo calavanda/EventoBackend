@@ -4,6 +4,61 @@ const Participante = require('../models/Participant');
 const Estand = require('../models/Stand');
 const Visita = require('../models/Visit');
 const Encuesta = require('../models/Survey');
+const Admin = require('../models/Admin');
+
+// --- ADMINISTRADORES (RBAC) ---
+router.get('/admins', async (req, res) => {
+  try {
+    const admins = await Admin.find().sort({ createdAt: -1 });
+    res.json(admins);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener admins: ' + err.message });
+  }
+});
+
+router.post('/admins', async (req, res) => {
+  try {
+    const admin = new Admin(req.body);
+    await admin.save();
+    res.status(201).json(admin);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al registrar admin: ' + err.message });
+  }
+});
+
+router.put('/admins/:id', async (req, res) => {
+  try {
+    const admin = await Admin.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(admin);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar admin: ' + err.message });
+  }
+});
+
+router.delete('/admins/:id', async (req, res) => {
+  try {
+    await Admin.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Admin eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar admin: ' + err.message });
+  }
+});
+
+router.post('/admins/check-auth', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email requerido' });
+    
+    const admin = await Admin.findOne({ email: email.toLowerCase(), activo: true });
+    if (!admin) {
+      return res.status(403).json({ authorized: false, message: 'Usuario no autorizado para acceder al panel' });
+    }
+    
+    res.json({ authorized: true, role: admin.rol, name: admin.nombre });
+  } catch (err) {
+    res.status(500).json({ error: 'Error en validación: ' + err.message });
+  }
+});
 
 // --- PARTICIPANTES ---
 router.get('/participants', async (req, res) => {
