@@ -266,20 +266,31 @@ router.get('/reports/stand-analytics', async (req, res) => {
       { $sort: { avgRating: -1 } }
     ]);
 
-    // Gráfica de picos de visitas filtrado por hora
+    // Gráfica de picos de visitas filtrado por hora (con zona horaria de México y desglosado por estand)
     const peakVisits = await Visita.aggregate([
       {
         $project: {
-          hour: { $hour: "$escaneadoEn" }
+          hour: { $hour: { date: "$escaneadoEn", timezone: "-06:00" } },
+          estand: 1
         }
       },
       {
         $group: {
-          _id: "$hour",
+          _id: { hour: "$hour", estand: "$estand" },
           count: { $sum: 1 }
         }
       },
-      { $sort: { _id: 1 } }
+      { $lookup: { from: 'estands', localField: '_id.estand', foreignField: '_id', as: 'estandInfo' } },
+      { $unwind: { path: '$estandInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          hour: "$_id.hour",
+          standName: { $ifNull: ["$estandInfo.nombre", "Desconocido"] },
+          count: 1
+        }
+      },
+      { $sort: { hour: 1 } }
     ]);
 
     res.json({ visitStats, surveyStats, peakVisits });
