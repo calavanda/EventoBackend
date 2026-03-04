@@ -1,112 +1,72 @@
-# Evento Backend (Francophonie)
+# Evento Backend (Francophonie) v4.0.0
 
-Servidor backend robusto desarrollado en **Node.js** con **Express** y **MongoDB**, diseñado para la gestión integral de eventos. Este sistema permite el registro de participantes, administración de estands, seguimiento de visitas mediante códigos QR y generación de estadísticas en tiempo real.
+Servidor backend robusrt de alto rendimiento desarrollado en **Node.js** con **Express** y **MongoDB Atlas**, diseñado para la gestión integral de eventos con un enfoque primordial en la **seguridad**.
 
 ## 🚀 Características Principales
 
+- **Blindaje de Seguridad Corporativo**: Protección activa contra inyecciones SQL y NoSQL mediante middleware de inspección de paquetes.
+- **Sistema de Alertas de Seguridad**: Registro automático de intentos de ataque, capturando IP, patrón detectado y datos del atacante.
 - **Gestión de Participantes**: Registro y administración de asistentes con generación de códigos QR únicos.
 - **Control de Estands**: Administración de los espacios físicos del evento.
 - **Registro de Visitas**: Escaneo de QR para registrar la interacción entre participantes y estands.
 - **Sistema de Encuestas**: Recopilación de feedback de los asistentes por cada estand visitado.
 - **Panel de Estadísticas**: Reportes agregados sobre afluencia, satisfacción y analíticas por estand.
+- **Auto-Seeding Inteligente**: Inicialización automática de administradores al arranque (ideal para despliegues Serverless).
 
 ## 🛠️ Stack Tecnológico
 
-- **Runtime**: [Node.js](https://nodejs.org/) (v20.x recomendado)
+- **Runtime**: [Node.js](https://nodejs.org/) (v20.x)
 - **Framework**: [Express.js](https://expressjs.com/)
-- **Base de Datos**: [MongoDB](https://www.mongodb.com/) con [Mongoose](https://mongoosejs.com/)
-- **Utilidades**:
-  - `cors` para manejo de peticiones entre dominios.
-  - `dotenv` para gestión de variables de entorno.
-  - `moment` para manejo de fechas.
+- **Base de Datos**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (Cloud DB)
+- **Despliegue**: [Vercel](https://vercel.com/) (Serverless Functions)
 
 ## 📁 Estructura del Proyecto
 
 ```text
 server/
-├── models/         # Esquemas de Mongoose (Participant, Stand, Visit, Survey)
+├── models/         # Esquemas de Mongoose (Admin, Participant, Stand, Visit, SecurityAlert)
 ├── routes/         # Definición de endpoints de la API (api.js)
-└── server.js       # Punto de entrada de la aplicación y configuración
+├── utils/          # Utilidades y Middlewares de seguridad
+└── server.js       # Punto de entrada optimizado para Vercel
 ```
 
-## ⚙️ Configuración Local
+## ⚙️ Configuración y Despliegue
 
-### Requisitos Previos
+### Variables de Entorno (.env)
 
-- Node.js v20 o superior.
-- Una instancia de MongoDB (local o en la nube como MongoDB Atlas).
-
-### Instalación
-
-1. Clona el repositorio:
-
-   ```bash
-   git clone https://github.com/calavanda/EventoBackend
-   cd EventoBackend
-   ```
-
-2. Instala las dependencias:
-
-   ```bash
-   npm install
-   ```
-
-3. Configura las variables de entorno:
-   Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
-   ```env
-   MONGODB_URI=tu_cadena_de_conexion_a_mongodb
-   PORT=5001
-   ```
-
-### Ejecución
-
-Para iniciar el servidor en modo desarrollo:
-
-```bash
-npm run dev
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/evento
+PORT=5001
 ```
 
-El servidor estará disponible en `http://localhost:5001`.
+### Comandos Útiles
 
-## 🛰️ API Endpoints
+- `npm start`: Inicia el servidor.
+- `node seedAdmins.js`: Crea los administradores base (opcional, ahora es automático).
 
-### Participantes
+## 🛰️ API Endpoints (Novedades)
 
-- `GET /api/participants`: Obtener todos los participantes.
-- `POST /api/participants`: Registrar un nuevo participante (genera código QR).
-- `PUT /api/participants/:id`: Actualizar datos de un participante.
-- `DELETE /api/participants/:id`: Eliminar un participante.
+### Seguridad
 
-### Estands
+- `GET /api/security/alerts`: Ver lista de intentos de ataque detectados.
+- `DELETE /api/security/alerts/clear`: Limpiar el historial de alertas.
+- `GET /api/debug/seed`: Forzar la creación de administradores base (Ruta de emergencia).
 
-- `GET /api/stands`: Listado de estands.
-- `POST /api/stands`: Crear un nuevo estand.
-- `PUT /api/stands/:id`: Editar un estand.
-- `DELETE /api/stands/:id`: Eliminar un estand.
+### Otros Módulos
 
-### Visitas y Escaneo
+- `/api/participants`: Gestión de asistentes.
+- `/api/stands`: Administración de estands.
+- `/api/visits/scan`: Registro de visitas vía QR.
+- `/api/reports`: Analíticas y estadísticas.
 
-- `POST /api/visits/scan`: Registrar visita enviando `codigoQR` y `estandId`.
+## ☁️ Arquitectura de Despliegue (New)
 
-### Encuestas
+Este proyecto ha sido migrado de Railway a una arquitectura de alta disponibilidad:
 
-- `GET /api/surveys`: Obtener todas las encuestas realizadas.
-- `POST /api/surveys`: Enviar una nueva encuesta de satisfacción.
-
-### Reportes y Analíticas
-
-- `GET /api/reports/stats`: Estadísticas generales (total participantes, visitas, satisfacción promedio).
-- `GET /api/reports/stand-visits`: Ranking de visitas por estand.
-- `GET /api/reports/stand-analytics`: Datos comparativos de visitas y calificaciones.
-
-## ☁️ Despliegue (Railway)
-
-Este proyecto está configurado para desplegarse fácilmente en **Railway**.
-
-- El servidor escucha en la interfaz `0.0.0.0`.
-- Utiliza la variable de entorno `PORT` proporcionada por la plataforma.
-- Asegúrate de configurar la variable `MONGODB_URI` en el panel de Railway.
+1. **Frontend**: Desplegado en Vercel.
+2. **Backend**: Desplegado en Vercel (Serverless).
+3. **Database**: MongoDB Atlas (Tier Gratuito Dedicado).
 
 ---
 
-© 2026 Evento - Sistema de Gestión de Participantes.
+© 2026 Evento - Sistema Seguro de Gestión de Participantes.
