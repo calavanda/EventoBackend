@@ -49,8 +49,38 @@ app.use((req, res) => {
 });
 
 const mongoUri = process.env.MONGODB_URI;
-console.log('PORT:', PORT);
-console.log('MONGODB_URI exists:', !!mongoUri);
+
+// Función para inicializar administradores
+const seedDefaultAdmins = async () => {
+  try {
+    const defaultAdmins = [
+      { nombre: 'Alfredo Admin (UTGZ)', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true }
+    ];
+    for (const adminData of defaultAdmins) {
+      const result = await Admin.findOneAndUpdate(
+        { email: adminData.email.toLowerCase() },
+        adminData,
+        { upsert: true, new: true }
+      );
+      console.log(`- Procesado admin: ${adminData.email} (ID: ${result._id})`);
+    }
+    console.log("✅ Administradores base verificados/creados correctamente.");
+    return true;
+  } catch (seedErr) {
+    console.error("Error en auto-seeding:", seedErr.message);
+    return false;
+  }
+};
+
+// Ruta de emergencia para forzar el seed
+app.get("/api/debug/seed", async (req, res) => {
+  const success = await seedDefaultAdmins();
+  if (success) {
+    res.json({ message: "Seed ejecutado con éxito" });
+  } else {
+    res.status(500).json({ error: "Error ejecutando el seed" });
+  }
+});
 
 if (!mongoUri) {
   console.error("ERROR CRÍTICO: La variable de entorno MONGODB_URI no existe.");
@@ -60,24 +90,9 @@ if (!mongoUri) {
   mongoose
     .connect(mongoUri)
     .then(async () => {
-      console.log("Conectado a MongoDB");
-      // Auto-seeder para asegurar administradores al inicio (útil para despliegue en Vercel)
-      try {
-        const defaultAdmins = [
-          { nombre: 'Alfredo Admin (UTGZ)', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true }
-        ];
-        for (const adminData of defaultAdmins) {
-          const result = await Admin.findOneAndUpdate(
-            { email: adminData.email.toLowerCase() },
-            adminData,
-            { upsert: true, new: true }
-          );
-          console.log(`- Procesado admin: ${adminData.email} (ID: ${result._id})`);
-        }
-        console.log("✅ Administradores base verificados/creados correctamente.");
-      } catch (seedErr) {
-        console.error("Error en auto-seeding:", seedErr.message);
-      }
+      const dbName = mongoose.connection.name;
+      console.log(`✅ Conectado a MongoDB. Base de datos: ${dbName}`);
+      await seedDefaultAdmins();
     })
     .catch((err) => {
       console.error("Detalles del error de conexión a MongoDB:", err.message);
