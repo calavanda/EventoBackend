@@ -42,14 +42,6 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "EventoBackend está corriendo", routes: ["/api/participants", "/api/stands", "/api/surveys", "/api/visits/scan", "/api/reports/stats", "/api/reports/stand-visits"] });
 });
 
-// 404 (ayuda a diagnosticar rutas faltantes)
-app.use((req, res) => {
-  console.log(`404 - Ruta no encontrada: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
-});
-
-const mongoUri = process.env.MONGODB_URI;
-
 // Función para inicializar administradores
 const seedDefaultAdmins = async () => {
   try {
@@ -81,6 +73,15 @@ app.get("/api/debug/seed", async (req, res) => {
     res.status(500).json({ error: "Error ejecutando el seed" });
   }
 });
+
+// 404 (ayuda a diagnosticar rutas faltantes)
+app.use((req, res) => {
+  console.log(`404 - Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
+});
+
+const mongoUri = process.env.MONGODB_URI;
+
 
 if (!mongoUri) {
   console.error("ERROR CRÍTICO: La variable de entorno MONGODB_URI no existe.");
