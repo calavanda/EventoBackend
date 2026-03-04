@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const apiRoutes = require("./routes/api");
+const { securityMiddleware } = require("./utils/security");
 
 // Solo carga el archivo .env si existe y no sobreescribe las variables de entorno (Railway establece sus propias)
 const envPath = path.join(__dirname, "..", ".env");
@@ -28,6 +29,9 @@ app.use(
   }),
 );
 app.use(express.json());
+
+// Blindaje de seguridad contra inyecciones NoSQL y SQL
+app.use(securityMiddleware);
 
 // Rutas
 app.use("/api", apiRoutes);

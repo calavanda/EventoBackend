@@ -5,6 +5,7 @@ const Estand = require('../models/Stand');
 const Visita = require('../models/Visit');
 const Encuesta = require('../models/Survey');
 const Admin = require('../models/Admin');
+const SecurityAlert = require('../models/SecurityAlert');
 
 // --- ADMINISTRADORES (RBAC) ---
 router.get('/admins', async (req, res) => {
@@ -340,6 +341,25 @@ router.get('/reports/participant-history/:id', async (req, res) => {
     res.json(history);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener historial: ' + err.message });
+  }
+});
+
+// --- ALERTAS DE SEGURIDAD ---
+router.get('/security/alerts', async (req, res) => {
+  try {
+    const alerts = await SecurityAlert.find().sort({ timestamp: -1 });
+    res.json(alerts);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener alertas: ' + err.message });
+  }
+});
+
+router.delete('/security/alerts/clear', async (req, res) => {
+  try {
+    await SecurityAlert.deleteMany({});
+    res.json({ message: 'Historial de seguridad limpiado correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al limpiar alertas: ' + err.message });
   }
 });
 
