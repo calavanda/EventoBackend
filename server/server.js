@@ -67,13 +67,14 @@ if (!mongoUri) {
           { nombre: 'Alfredo Admin (UTGZ)', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true }
         ];
         for (const adminData of defaultAdmins) {
-          await Admin.findOneAndUpdate(
+          const result = await Admin.findOneAndUpdate(
             { email: adminData.email.toLowerCase() },
             adminData,
-            { upsert: true }
+            { upsert: true, new: true }
           );
+          console.log(`- Procesado admin: ${adminData.email} (ID: ${result._id})`);
         }
-        console.log("✅ Administradores base verificados/creados.");
+        console.log("✅ Administradores base verificados/creados correctamente.");
       } catch (seedErr) {
         console.error("Error en auto-seeding:", seedErr.message);
       }
