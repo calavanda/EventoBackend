@@ -18,7 +18,6 @@ if (fs.existsSync(envPath)) {
 }
 
 const app = express();
-// Railway proporciona una variable de entorno PORT, debemos usarla si está presente
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
 // Middleware - permitir todo para evitar CORS
@@ -65,8 +64,7 @@ if (!mongoUri) {
       // Auto-seeder para asegurar administradores al inicio (útil para despliegue en Vercel)
       try {
         const defaultAdmins = [
-          { nombre: 'Admin Principal', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true },
-          { nombre: 'Alfredo Admin', email: 'tu-correo@gmail.com', rol: 'admin', activo: true }
+          { nombre: 'Alfredo Admin (UTGZ)', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true }
         ];
         for (const adminData of defaultAdmins) {
           await Admin.findOneAndUpdate(
