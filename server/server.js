@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const apiRoutes = require("./routes/api");
+const Admin = require("./models/Admin");
 const { securityMiddleware } = require("./utils/security");
 
 // Solo carga el archivo .env si existe y no sobreescribe las variables de entorno (Railway establece sus propias)
@@ -59,7 +60,26 @@ if (!mongoUri) {
 } else {
   mongoose
     .connect(mongoUri)
-    .then(() => console.log("Conectado a MongoDB"))
+    .then(async () => {
+      console.log("Conectado a MongoDB");
+      // Auto-seeder para asegurar administradores al inicio (útil para despliegue en Vercel)
+      try {
+        const defaultAdmins = [
+          { nombre: 'Admin Principal', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true },
+          { nombre: 'Alfredo Admin', email: 'tu-correo@gmail.com', rol: 'admin', activo: true }
+        ];
+        for (const adminData of defaultAdmins) {
+          await Admin.findOneAndUpdate(
+            { email: adminData.email.toLowerCase() },
+            adminData,
+            { upsert: true }
+          );
+        }
+        console.log("✅ Administradores base verificados/creados.");
+      } catch (seedErr) {
+        console.error("Error en auto-seeding:", seedErr.message);
+      }
+    })
     .catch((err) => {
       console.error("Detalles del error de conexión a MongoDB:", err.message);
     });

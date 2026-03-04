@@ -6,7 +6,8 @@ const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const participants = [
-  { nombre: 'Admin Principal', email: '22610282@utgz.edu.mx', rol: 'admin' },
+  { nombre: 'Admin Principal', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true },
+  { nombre: 'Alfredo', email: 'si@gmail.com', rol: 'admin', activo: true },
 ];
 
 async function seed() {
