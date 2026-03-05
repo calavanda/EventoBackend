@@ -105,6 +105,70 @@ router.delete('/participants/:id', async (req, res) => {
   }
 });
 
+router.post('/participants/bulk', async (req, res) => {
+  try {
+    const participantes = req.body;
+    if (!Array.isArray(participantes) || participantes.length === 0) {
+      return res.status(400).json({ error: 'Se requiere un arreglo de participantes válido.' });
+    }
+
+    // Assign QR codes to those who don't have them
+    const participantesConQR = participantes.map(p => {
+      const pDoc = new Participante(p);
+      if (!pDoc.codigoQR || pDoc.codigoQR.includes('undefined')) {
+         pDoc.codigoQR = `EVT-${pDoc._id}`;
+      }
+      return pDoc;
+    });
+
+    const result = await Participante.insertMany(participantesConQR);
+    res.status(201).json({ mensaje: `${result.length} participantes importados correctamente.`, count: result.length });
+  } catch (err) {
+    console.error('Error en importación masiva:', err.message);
+    res.status(500).json({ error: 'Error al importar participantes: ' + err.message });
+  }
+});
+
+// --- CORREOS ELECTRÓNICOS (Nodemailer/Gmail) ---
+const sendQREmail = require('../utils/mailer');
+
+router.post('/email/send-qr', async (req, res) => {
+  try {
+    const { recipients, subject, customMessage } = req.body;
+    
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ error: 'Se requiere una lista de destinatarios válida.' });
+    }
+
+    // Usar nodemailer para cada destinatario
+    const results = [];
+    for (const recipient of recipients) {
+      const { email, nombre, codigoQR } = recipient;
+      
+      if (!email || !codigoQR) continue;
+      
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(codigoQR)}&size=300x300&color=4318FF`;
+      
+      try {
+        const response = await sendQREmail(email, nombre, qrUrl, subject, customMessage);
+        results.push({ email, success: true, response });
+      } catch (err) {
+        results.push({ email, success: false, error: err.message });
+      }
+    }
+
+    const successes = results.filter(r => r.success).length;
+    res.status(200).json({ 
+      mensaje: `Se enviaron ${successes} correos de ${recipients.length} solicitados.`,
+      resultados: results 
+    });
+
+  } catch (err) {
+    console.error('Error al enviar correos masivos:', err);
+    res.status(500).json({ error: 'Error interno al enviar correos: ' + err.message });
+  }
+});
+
 // --- ESTANDS ---
 router.get('/stands', async (req, res) => {
   try {
