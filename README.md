@@ -7,8 +7,8 @@ Servidor backend robusrt de alto rendimiento desarrollado en **Node.js** con **E
 - **Blindaje de Seguridad Corporativo**: Protección activa contra inyecciones SQL y NoSQL mediante middleware de inspección de paquetes.
 - **Sistema de Alertas de Seguridad**: Registro automático de intentos de ataque, capturando IP, patrón detectado y datos del atacante.
 - **Gestión de Participantes**: Registro y administración de asistentes con generación de códigos QR únicos.
-- **Control de Estands**: Administración de los espacios físicos del evento.
-- **Registro de Visitas**: Escaneo de QR para registrar la interacción entre participantes y estands.
+- **Control de Stands**: Administración de los espacios físicos del evento.
+- **Registro de Visitas**: Escaneo de QR para registrar la interacción entre participantes y stands.
 - **Sistema de Encuestas**: Recopilación de feedback de los asistentes por cada estand visitado.
 - **Panel de Estadísticas**: Reportes agregados sobre afluencia, satisfacción y analíticas por estand.
 - **Auto-Seeding Inteligente**: Inicialización automática de administradores al arranque (ideal para despliegues Serverless).
@@ -55,7 +55,7 @@ PORT=5001
 ### Otros Módulos
 
 - `/api/participants`: Gestión de asistentes.
-- `/api/stands`: Administración de estands.
+- `/api/stands`: Administración de stands.
 - `/api/visits/scan`: Registro de visitas vía QR.
 - `/api/reports`: Analíticas y estadísticas.
 
