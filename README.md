@@ -9,8 +9,8 @@ Servidor backend robusrt de alto rendimiento desarrollado en **Node.js** con **E
 - **Gestión de Participantes**: Registro y administración de asistentes con generación de códigos QR únicos.
 - **Control de Stands**: Administración de los espacios físicos del evento.
 - **Registro de Visitas**: Escaneo de QR para registrar la interacción entre participantes y stands.
-- **Sistema de Encuestas**: Recopilación de feedback de los asistentes por cada estand visitado.
-- **Panel de Estadísticas**: Reportes agregados sobre afluencia, satisfacción y analíticas por estand.
+- **Sistema de Encuestas**: Recopilación de feedback de los asistentes por cada stand visitado.
+- **Panel de Estadísticas**: Reportes agregados sobre afluencia, satisfacción y analíticas por stand.
 - **Auto-Seeding Inteligente**: Inicialización automática de administradores al arranque (ideal para despliegues Serverless).
 
 ## 🛠️ Stack Tecnológico
