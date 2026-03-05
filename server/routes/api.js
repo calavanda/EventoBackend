@@ -112,7 +112,7 @@ router.post('/participants/bulk', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere un arreglo de participantes válido.' });
     }
 
-    // Assign QR codes to those who don't have them
+    // Asignar QR codes a los que no tienen
     const participantesConQR = participantes.map(p => {
       const pDoc = new Participante(p);
       if (!pDoc.codigoQR || pDoc.codigoQR.includes('undefined')) {
@@ -169,42 +169,42 @@ router.post('/email/send-qr', async (req, res) => {
   }
 });
 
-// --- ESTANDS ---
+// --- STANDS ---
 router.get('/stands', async (req, res) => {
   try {
-    const estands = await Estand.find().sort({ creadoEn: -1 });
-    res.json(estands);
+    const stands = await Stand.find().sort({ creadoEn: -1 });
+    res.json(stands);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener estands: ' + err.message });
+    res.status(500).json({ error: 'Error al obtener stands: ' + err.message });
   }
 });
 
 router.post('/stands', async (req, res) => {
   try {
-    const estand = new Estand(req.body);
-    await estand.save();
-    res.status(201).json(estand);
+    const stand = new Stand(req.body);
+    await stand.save();
+    res.status(201).json(stand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al registrar estand: ' + err.message });
+    res.status(500).json({ error: 'Error al registrar stand: ' + err.message });
   }
 });
 
 router.put('/stands/:id', async (req, res) => {
   try {
-    const estand = await Estand.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!estand) return res.status(404).json({ error: 'Estand no encontrado' });
-    res.json(estand);
+    const stand = await Stand.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!stand) return res.status(404).json({ error: 'Stand no encontrado' });
+    res.json(stand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al actualizar estand: ' + err.message });
+    res.status(500).json({ error: 'Error al actualizar stand: ' + err.message });
   }
 });
 
 router.delete('/stands/:id', async (req, res) => {
   try {
-    await Estand.findByIdAndDelete(req.params.id);
-    res.json({ mensaje: 'Estand eliminado correctamente' });
+    await Stand.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Stand eliminado correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar estand: ' + err.message });
+    res.status(500).json({ error: 'Error al eliminar stand: ' + err.message });
   }
 });
 
@@ -300,8 +300,8 @@ router.get('/reports/stats', async (req, res) => {
 router.get('/reports/stand-visits', async (req, res) => {
   try {
     const visitasPorEstand = await Visita.aggregate([
-      { $group: { _id: '$estand', count: { $sum: 1 } } },
-      { $lookup: { from: 'estands', localField: '_id', foreignField: '_id', as: 'detalles' } },
+      { $group: { _id: '$stand', count: { $sum: 1 } } },
+      { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'detalles' } },
       { $unwind: { path: '$detalles', preserveNullAndEmptyArrays: true } },
       { $project: { name: { $ifNull: ['$detalles.nombre', 'Desconocido'] }, count: 1 } },
       { $sort: { count: -1 } }
@@ -312,22 +312,22 @@ router.get('/reports/stand-visits', async (req, res) => {
   }
 });
 
-// --- ANALÍTICAS (Gráficas de los estands) ---
+// --- ANALÍTICAS (Gráficas de los stands) ---
 router.get('/reports/stand-analytics', async (req, res) => {
   try {
     const visitStats = await Visita.aggregate([
-      { $group: { _id: '$estand', count: { $sum: 1 } } },
-      { $lookup: { from: 'estands', localField: '_id', foreignField: '_id', as: 'estand' } },
-      { $unwind: { path: '$estand', preserveNullAndEmptyArrays: true } },
-      { $project: { name: { $ifNull: ['$estand.nombre', 'Desconocido'] }, count: 1 } },
+      { $group: { _id: '$stand', count: { $sum: 1 } } },
+      { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'stand' } },
+      { $unwind: { path: '$stand', preserveNullAndEmptyArrays: true } },
+      { $project: { name: { $ifNull: ['$stand.nombre', 'Desconocido'] }, count: 1 } },
       { $sort: { count: -1 } }
     ]);
 
     const surveyStats = await Encuesta.aggregate([
-      { $group: { _id: '$estand', avgRating: { $avg: { $avg: ['$p1', '$p2', '$p3', '$p4', '$p5'] } } } },
-      { $lookup: { from: 'estands', localField: '_id', foreignField: '_id', as: 'estand' } },
-      { $unwind: { path: '$estand', preserveNullAndEmptyArrays: true } },
-      { $project: { name: { $ifNull: ['$estand.nombre', 'Desconocido'] }, avgRating: { $round: ['$avgRating', 1] } } },
+      { $group: { _id: '$stand', avgRating: { $avg: { $avg: ['$p1', '$p2', '$p3', '$p4', '$p5'] } } } },
+      { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'stand' } },
+      { $unwind: { path: '$stand', preserveNullAndEmptyArrays: true } },
+      { $project: { name: { $ifNull: ['$stand.nombre', 'Desconocido'] }, avgRating: { $round: ['$avgRating', 1] } } },
       { $sort: { avgRating: -1 } }
     ]);
 
@@ -337,22 +337,22 @@ router.get('/reports/stand-analytics', async (req, res) => {
       {
         $project: {
           hour: { $hour: "$escaneadoEn" },
-          estand: 1
+          stand: 1
         }
       },
       {
         $group: {
-          _id: { hour: "$hour", estand: "$estand" },
+          _id: { hour: "$hour", stand: "$stand" },
           count: { $sum: 1 }
         }
       },
-      { $lookup: { from: 'estands', localField: '_id.estand', foreignField: '_id', as: 'estandInfo' } },
-      { $unwind: { path: '$estandInfo', preserveNullAndEmptyArrays: true } },
+      { $lookup: { from: 'stands', localField: '_id.stand', foreignField: '_id', as: 'standInfo' } },
+      { $unwind: { path: '$standInfo', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 0,
           hour: "$_id.hour",
-          standName: { $ifNull: ["$estandInfo.nombre", "Desconocido"] },
+          standName: { $ifNull: ["$standInfo.nombre", "Desconocido"] },
           count: 1
         }
       },
@@ -373,19 +373,19 @@ router.get('/reports/visitor-stats', async (req, res) => {
     const stats = await Visita.aggregate([
       {
         $group: {
-          _id: '$estand',
+          _id: '$stand',
           totalVisits: { $sum: 1 },
           uniqueVisitors: { $addToSet: '$participante' }
         }
       },
       {
         $project: {
-          estand: '$_id',
+          stand: '$_id',
           totalVisits: 1,
           uniqueVisitorsCount: { $size: '$uniqueVisitors' }
         }
       },
-      { $lookup: { from: 'estands', localField: 'estand', foreignField: '_id', as: 'detalles' } },
+      { $lookup: { from: 'stands', localField: 'stand', foreignField: '_id', as: 'detalles' } },
       { $unwind: { path: '$detalles', preserveNullAndEmptyArrays: true } },
       { $project: { name: { $ifNull: ['$detalles.nombre', 'Desconocido'] }, totalVisits: 1, uniqueVisitorsCount: 1 } },
       { $sort: { totalVisits: -1 } }
@@ -400,7 +400,7 @@ router.get('/reports/visitor-stats', async (req, res) => {
 router.get('/reports/participant-history/:id', async (req, res) => {
   try {
     const history = await Visita.find({ participante: req.params.id })
-      .populate('estand', 'nombre')
+      .populate('stand', 'nombre')
       .sort({ escaneadoEn: 1 });
     res.json(history);
   } catch (err) {
