@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const EstandSchema = new mongoose.Schema({
+const StandSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
   responsable: { type: String, required: true },
   ubicacion: { type: String },
@@ -8,4 +8,4 @@ const EstandSchema = new mongoose.Schema({
   creadoEn: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Estand', EstandSchema);
+module.exports = mongoose.model('Stand', StandSchema);
