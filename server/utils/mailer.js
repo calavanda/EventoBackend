@@ -50,10 +50,10 @@ const sendQREmail = async (to, participantName, qrUrl, subject, customMessage) =
                 <table width="100%" border="0" cellspacing="0" cellpadding="0">
                   <tr>
                     <td align="left">
-                      <img src="https://ibb.co/rK0g5cHD" alt="Francophonie" style="height: 50px; width: auto; object-fit: contain;" />
+                      <img src="https://i.ibb.co/cK3P2CQ4/logo-francophonie.png" alt="Francophonie" style="height: 50px; width: auto; object-fit: contain;" />
                     </td>
                     <td align="right">
-                      <img src="https://ibb.co/RkRnrQjh" alt="UTGZ" style="height: 50px; width: auto; object-fit: contain;" />
+                      <img src="https://i.ibb.co/0RHN4YsB/utgz.png" alt="UTGZ" style="height: 50px; width: auto; object-fit: contain;" />
                     </td>
                   </tr>
                 </table>
