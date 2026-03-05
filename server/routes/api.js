@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Participante = require('../models/Participant');
-const Estand = require('../models/Stand');
+const Stand = require('../models/Stand');
 const Visita = require('../models/Visit');
 const Encuesta = require('../models/Survey');
 const Admin = require('../models/Admin');
@@ -211,10 +211,10 @@ router.delete('/stands/:id', async (req, res) => {
 // --- VISITAS (Escáner QR) ---
 router.post('/visits/scan', async (req, res) => {
   try {
-    const { codigoQR, estandId } = req.body;
+    const { codigoQR, standId } = req.body;
 
-    if (!codigoQR || !estandId) {
-      return res.status(400).json({ error: 'Falta el código QR o el ID del estand' });
+    if (!codigoQR || !standId) {
+      return res.status(400).json({ error: 'Falta el código QR o el ID del stand' });
     }
 
     const participante = await Participante.findOne({ codigoQR });
@@ -226,7 +226,7 @@ router.post('/visits/scan', async (req, res) => {
 
     const visita = new Visita({
       participante: participante._id,
-      estand: estandId
+      stand: standId
     });
     await visita.save();
 
@@ -249,7 +249,7 @@ router.post('/visits/scan', async (req, res) => {
 router.get('/surveys', async (req, res) => {
   try {
     const encuestas = await Encuesta.find()
-      .populate('estand')
+      .populate('stand')
       .sort({ creadoEn: -1 });
     res.json(encuestas);
   } catch (err) {
@@ -272,7 +272,7 @@ router.get('/reports/stats', async (req, res) => {
   try {
     const totalParticipants = await Participante.countDocuments();
     const totalVisits = await Visita.countDocuments();
-    const totalStands = await Estand.countDocuments();
+    const totalStands = await Stand.countDocuments();
     const surveysCount = await Encuesta.countDocuments();
 
     const resultado = await Encuesta.aggregate([
@@ -299,16 +299,16 @@ router.get('/reports/stats', async (req, res) => {
 
 router.get('/reports/stand-visits', async (req, res) => {
   try {
-    const visitasPorEstand = await Visita.aggregate([
+    const visitasPorStand = await Visita.aggregate([
       { $group: { _id: '$stand', count: { $sum: 1 } } },
       { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'detalles' } },
       { $unwind: { path: '$detalles', preserveNullAndEmptyArrays: true } },
       { $project: { name: { $ifNull: ['$detalles.nombre', 'Desconocido'] }, count: 1 } },
       { $sort: { count: -1 } }
     ]);
-    res.json(visitasPorEstand);
+    res.json(visitasPorStand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener visitas por estand: ' + err.message });
+    res.status(500).json({ error: 'Error al obtener visitas por stand: ' + err.message });
   }
 });
 
