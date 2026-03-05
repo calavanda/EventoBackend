@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const EncuestaSchema = new mongoose.Schema({
-  estand: { type: mongoose.Schema.Types.ObjectId, ref: 'Estand' },
+  stand: { type: mongoose.Schema.Types.ObjectId, ref: 'Stand' },
   p1: { type: Number },
   p2: { type: Number },
   p3: { type: Number },

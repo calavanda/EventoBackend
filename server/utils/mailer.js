@@ -83,7 +83,7 @@ const sendQREmail = async (to, participantName, qrUrl, subject, customMessage) =
           
           <!-- Mensaje Personalizado Debajo del Gafete -->
           <div style="max-width: 400px; margin: 20px auto; color: #707EAE; font-size: 14px; line-height: 1.5; padding: 0 15px;">
-             ${customMessage ? `<p>${customMessage.replace(/\n/g, '<br>')}</p>` : `<p>Presenta este código QR desde tu celular al ingresar al evento y al visitar los estands.</p>`}
+             ${customMessage ? `<p>${customMessage.replace(/\n/g, '<br>')}</p>` : `<p>Presenta este código QR desde tu celular al ingresar al evento y al visitar los stands.</p>`}
           </div>
 
         </body>
