@@ -1,16 +1,34 @@
 const SecurityAlert = require('../models/SecurityAlert');
 
 /**
- * Middleware para sanitizar contra inyección NoSQL (Mongoose/MongoDB)
- * Elimina claves que comienzan con '$' o contienen '.' en req.body, req.query y req.params
+ * Filtra caracteres peligrosos pero permite acentos franceses.
+ * Reemplaza < > " ' & con sus entidades HTML o simplemente los remueve/escapa
+ * para prevenir XSS básico sin romper el texto legítimo.
  */
-const noSqlSanitize = (data) => {
+const xssSanitize = (str) => {
+  if (typeof str !== 'string') return str;
+  // Reemplaza los caracteres problemáticos por versiones "seguras" o simplemente los limpia
+  return str
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/script/gi, '[bloqueado]'); // Prevenir palabras clave reactivamente
+};
+
+/**
+ * Middleware para sanitizar contra inyección NoSQL (Mongoose/MongoDB)
+ * y prevenir XSS de forma recursiva.
+ */
+const deepSanitize = (data) => {
   if (data instanceof Object) {
     for (const key in data) {
       if (key.startsWith('$') || key.includes('.')) {
         delete data[key];
-      } else {
-        noSqlSanitize(data[key]);
+      } else if (typeof data[key] === 'string') {
+        data[key] = xssSanitize(data[key]);
+      } else if (typeof data[key] === 'object') {
+        deepSanitize(data[key]);
       }
     }
   }
@@ -18,58 +36,84 @@ const noSqlSanitize = (data) => {
 };
 
 /**
- * Middleware de detección de inyección SQL y patrones maliciosos
+ * Middleware de detección de inyección SQL, NoSQL y patrones maliciosos mejorado
  */
 const securityMiddleware = async (req, res, next) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   const method = req.method;
   const url = req.originalUrl;
   
-  // Patrones comunes de inyección SQL
+  // Patrones de inyección SQL
   const sqlInjectionPatterns = [
-    /(\%27)|(\')|(\-\-)|(\%23)|(#)/i, // Comillas simples y comentarios
-    /((\%3D)|(=))[^\n]*((\%27)|(\')|(\-\-)|(\%3B)|(;))/i, // Igualdad seguido de comentario/punto y coma
-    /\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/i, // ' or '
-    /((\%27)|(\'))union/i, // ' union
-    /exec(\s|\+)+(s|x)p\w+/i, // exec sp_ (procedimientos almacenados)
-    /SELECT\s.*\sFROM\s/i, // SELECT ... FROM
-    /INSERT\s.*\sINTO\s/i, // INSERT ... INTO
-    /DELETE\s.*\sFROM\s/i, // DELETE ... FROM
-    /DROP\s+TABLE/i, // DROP TABLE
-    /UPDATE\s.*\sSET\s/i, // UPDATE ... SET
+    /(\-\-)|(\%23)|(?<!&)#(?!\d+;)/i,
+    /UNION(\s|\+)+SELECT/i,
+    /EXEC(\s|\+)+(S|X)P\W+/i,
+    /DROP(\s|\+)TABLE/i,
+    /UPDATE.*SET.*/i,
+    /INSERT.*INTO.*/i,
+    /DELETE.*FROM.*/i,
+    /TRUNCATE(\s|\+)TABLE/i,
+    /SLEEP\(\d+\)/i,
+    /OR\s+1\s*=\s*1/i
+  ];
+
+  // Regex para detectar etiquetas HTML maliciosas (XSS)
+  const xssPatterns = [
+    /<script.*?>.*?<\/script>/gi,
+    /<iframe.*?>.*?<\/iframe>/gi,
+    /onerror\s*=/gi,
+    /onload\s*=/gi,
+    /javascript:/gi
+  ];
+
+  // Patrones de inyección NoSQL (claves que empiezan con $)
+  const noSqlPatterns = [
+    /\"\$[a-z]+\"\s*:/i, // Detecta "$gt":, "$ne":, etc. en el JSON
+    /\$[a-z]+\s*:/i      // Detecta $where, etc.
   ];
 
   const checkPayload = (payload) => {
+    if (!payload || Object.keys(payload).length === 0) return null;
     const strPayload = JSON.stringify(payload);
+    
     for (const pattern of sqlInjectionPatterns) {
-      if (pattern.test(strPayload)) {
-        return pattern.toString();
-      }
+      if (pattern.test(strPayload)) return `SQL: ${pattern.toString()}`;
     }
+    
+    for (const pattern of xssPatterns) {
+      if (pattern.test(strPayload)) return `XSS: ${pattern.toString()}`;
+    }
+
+    for (const pattern of noSqlPatterns) {
+      if (pattern.test(strPayload)) return `NoSQL: ${pattern.toString()}`;
+    }
+    
     return null;
   };
 
-  // Sanitización NoSQL reactiva
-  noSqlSanitize(req.body);
-  noSqlSanitize(req.query);
-  noSqlSanitize(req.params);
-
-  // Detección de patrones maliciosos
+  // 1. Detección de patrones maliciosos (Bloqueo activo)
+  // Checamos ANTES de sanitizar para atrapar el intento original
   const suspiciousPatternBody = checkPayload(req.body);
   const suspiciousPatternQuery = checkPayload(req.query);
+  const suspiciousPatternParams = checkPayload(req.params);
   
-  if (suspiciousPatternBody || suspiciousPatternQuery) {
-    console.warn(`⚠️ [ALERTA DE SEGURIDAD] Intento de inyección detectado desde IP: ${ip}`);
-    console.warn(`Pattern: ${suspiciousPatternBody || suspiciousPatternQuery}`);
+  const patternFound = suspiciousPatternBody || suspiciousPatternQuery || suspiciousPatternParams;
+
+  if (patternFound) {
+    console.warn(`⚠️ [ALERTA DE SEGURIDAD] Intento malicioso detectado desde IP: ${ip}`);
+    console.warn(`Patrón: ${patternFound}`);
     
     try {
-      // Registrar la alerta en la base de datos
       const alert = new SecurityAlert({
         ip,
         metodo: method,
         url,
-        tipoAtaque: suspiciousPatternBody ? 'SQL Injection (Body)' : 'SQL Injection (Query)',
-        detalles: suspiciousPatternBody ? req.body : req.query
+        tipoAtaque: 'Malicious Pattern Detected',
+        detalles: {
+          pattern: patternFound,
+          body: req.body,
+          query: req.query
+        }
       });
       await alert.save();
     } catch (err) {
@@ -81,6 +125,12 @@ const securityMiddleware = async (req, res, next) => {
       incidentReported: true
     });
   }
+
+  // 2. Sanitización Profunda (XSS Escaping + NoSQL Cleanup)
+  // Limpia cualquier cosa que haya pasado los patrones pero que aún deba ser saneada
+  deepSanitize(req.body);
+  deepSanitize(req.query);
+  deepSanitize(req.params);
 
   next();
 };
