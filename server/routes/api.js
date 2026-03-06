@@ -315,7 +315,16 @@ router.get('/reports/stand-visits', async (req, res) => {
 // --- ANALÍTICAS (Gráficas de los stands) ---
 router.get('/reports/stand-analytics', async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    const matchStage = {};
+    if (startDate || endDate) {
+      matchStage.escaneadoEn = {};
+      if (startDate) matchStage.escaneadoEn.$gte = new Date(startDate);
+      if (endDate) matchStage.escaneadoEn.$lte = new Date(endDate);
+    }
+
     const visitStats = await Visita.aggregate([
+      { $match: matchStage },
       { $group: { _id: '$stand', count: { $sum: 1 } } },
       { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'stand' } },
       { $unwind: { path: '$stand', preserveNullAndEmptyArrays: true } },
@@ -324,6 +333,8 @@ router.get('/reports/stand-analytics', async (req, res) => {
     ]);
 
     const surveyStats = await Encuesta.aggregate([
+      // Asumiendo que las encuestas también tienen un campo de fecha si se requiere filtrar,
+      // pero por ahora mantenemos el filtro básico de stand.
       { $group: { _id: '$stand', avgRating: { $avg: { $avg: ['$p1', '$p2', '$p3', '$p4', '$p5'] } } } },
       { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'stand' } },
       { $unwind: { path: '$stand', preserveNullAndEmptyArrays: true } },
@@ -331,18 +342,19 @@ router.get('/reports/stand-analytics', async (req, res) => {
       { $sort: { avgRating: -1 } }
     ]);
 
-    // Gráfica de picos de visitas filtrado por hora (sin zona horaria primero para descartar problemas de versión)
+    // Gráfica de picos de visitas filtrado por hora con zona horaria GMT-6
     const peakVisits = await Visita.aggregate([
-      { $match: { escaneadoEn: { $exists: true, $ne: null } } },
+      { $match: { ...matchStage, escaneadoEn: { $exists: true, $ne: null } } },
       {
         $project: {
-          hour: { $hour: "$escaneadoEn" },
+          hour: { $hour: { date: "$escaneadoEn", timezone: "-06:00" } },
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$escaneadoEn", timezone: "-06:00" } },
           stand: 1
         }
       },
       {
         $group: {
-          _id: { hour: "$hour", stand: "$stand" },
+          _id: { hour: "$hour", date: "$date", stand: "$stand" },
           count: { $sum: 1 }
         }
       },
@@ -352,11 +364,12 @@ router.get('/reports/stand-analytics', async (req, res) => {
         $project: {
           _id: 0,
           hour: "$_id.hour",
+          date: "$_id.date",
           standName: { $ifNull: ["$standInfo.nombre", "Desconocido"] },
           count: 1
         }
       },
-      { $sort: { hour: 1 } }
+      { $sort: { date: 1, hour: 1 } }
     ]);
 
     res.json({ visitStats, surveyStats, peakVisits });
@@ -370,7 +383,16 @@ router.get('/reports/stand-analytics', async (req, res) => {
 // Cuántos visitantes únicos visitaron un stand (gráfica de visitantes vs visitas totales)
 router.get('/reports/visitor-stats', async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    const matchStage = {};
+    if (startDate || endDate) {
+      matchStage.escaneadoEn = {};
+      if (startDate) matchStage.escaneadoEn.$gte = new Date(startDate);
+      if (endDate) matchStage.escaneadoEn.$lte = new Date(endDate);
+    }
+
     const stats = await Visita.aggregate([
+      { $match: matchStage },
       {
         $group: {
           _id: '$stand',
