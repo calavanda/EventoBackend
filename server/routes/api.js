@@ -319,8 +319,12 @@ router.get('/reports/stand-analytics', async (req, res) => {
     const matchStage = {};
     if (startDate || endDate) {
       matchStage.escaneadoEn = {};
-      if (startDate) matchStage.escaneadoEn.$gte = new Date(startDate);
-      if (endDate) matchStage.escaneadoEn.$lte = new Date(endDate);
+      if (startDate) {
+        matchStage.escaneadoEn.$gte = new Date(`${startDate}T00:00:00-06:00`);
+      }
+      if (endDate) {
+        matchStage.escaneadoEn.$lte = new Date(`${endDate}T23:59:59.999-06:00`);
+      }
     }
 
     const visitStats = await Visita.aggregate([
@@ -342,19 +346,33 @@ router.get('/reports/stand-analytics', async (req, res) => {
       { $sort: { avgRating: -1 } }
     ]);
 
-    // Gráfica de picos de visitas filtrado por hora con zona horaria GMT-6
+    // Gráfica de picos de visitas con granularidad de 15 minutos para permitir zoom detallado
     const peakVisits = await Visita.aggregate([
-      { $match: { ...matchStage, escaneadoEn: { $exists: true, $ne: null } } },
+      { $match: { ...matchStage, escaneadoEn: { ...(matchStage.escaneadoEn || {}), $exists: true, $ne: null } } },
       {
         $project: {
-          hour: { $hour: { date: "$escaneadoEn", timezone: "-06:00" } },
-          date: { $dateToString: { format: "%Y-%m-%d", date: "$escaneadoEn", timezone: "-06:00" } },
+          // Truncamos a intervalos de 15 minutos
+          timestamp: {
+            $dateFromParts: {
+              year: { $year: { date: "$escaneadoEn", timezone: "-06:00" } },
+              month: { $month: { date: "$escaneadoEn", timezone: "-06:00" } },
+              day: { $dayOfMonth: { date: "$escaneadoEn", timezone: "-06:00" } },
+              hour: { $hour: { date: "$escaneadoEn", timezone: "-06:00" } },
+              minute: { 
+                $subtract: [
+                  { $minute: { date: "$escaneadoEn", timezone: "-06:00" } },
+                  { $mod: [{ $minute: { date: "$escaneadoEn", timezone: "-06:00" } }, 15] }
+                ] 
+              },
+              timezone: "-06:00"
+            }
+          },
           stand: 1
         }
       },
       {
         $group: {
-          _id: { hour: "$hour", date: "$date", stand: "$stand" },
+          _id: { timestamp: "$timestamp", stand: "$stand" },
           count: { $sum: 1 }
         }
       },
@@ -363,13 +381,12 @@ router.get('/reports/stand-analytics', async (req, res) => {
       {
         $project: {
           _id: 0,
-          hour: "$_id.hour",
-          date: "$_id.date",
+          timestamp: "$_id.timestamp",
           standName: { $ifNull: ["$standInfo.nombre", "Desconocido"] },
           count: 1
         }
       },
-      { $sort: { date: 1, hour: 1 } }
+      { $sort: { timestamp: 1 } }
     ]);
 
     res.json({ visitStats, surveyStats, peakVisits });
@@ -387,8 +404,12 @@ router.get('/reports/visitor-stats', async (req, res) => {
     const matchStage = {};
     if (startDate || endDate) {
       matchStage.escaneadoEn = {};
-      if (startDate) matchStage.escaneadoEn.$gte = new Date(startDate);
-      if (endDate) matchStage.escaneadoEn.$lte = new Date(endDate);
+      if (startDate) {
+        matchStage.escaneadoEn.$gte = new Date(`${startDate}T00:00:00-06:00`);
+      }
+      if (endDate) {
+        matchStage.escaneadoEn.$lte = new Date(`${endDate}T23:59:59.999-06:00`);
+      }
     }
 
     const stats = await Visita.aggregate([
