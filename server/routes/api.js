@@ -113,7 +113,7 @@ router.post('/participants/bulk', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere un arreglo de participantes válido.' });
     }
 
-    // Asignar QR codes a los que no tienen
+    // Asignar códigos QR a los que no tienen
     const participantesConQR = participantes.map(p => {
       const pDoc = new Participante(p);
       if (!pDoc.codigoQR || pDoc.codigoQR.includes('undefined')) {
