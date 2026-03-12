@@ -6,6 +6,7 @@ const Visita = require('../models/Visit');
 const Encuesta = require('../models/Survey');
 const Admin = require('../models/Admin');
 const SecurityAlert = require('../models/SecurityAlert');
+const EventSurvey = require('../models/EventSurvey');
 
 // --- ADMINISTRADORES (RBAC) ---
 router.get('/admins', async (req, res) => {
@@ -267,6 +268,26 @@ router.post('/surveys', async (req, res) => {
   }
 });
 
+// --- ENCUESTAS DEL EVENTO ---
+router.get('/event-surveys', async (req, res) => {
+  try {
+    const encuestas = await EventSurvey.find().sort({ creadoEn: -1 });
+    res.json(encuestas);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener encuestas del evento: ' + err.message });
+  }
+});
+
+router.post('/event-surveys', async (req, res) => {
+  try {
+    const encuesta = new EventSurvey(req.body);
+    await encuesta.save();
+    res.status(201).json(encuesta);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar encuesta del evento: ' + err.message });
+  }
+});
+
 // --- REPORTES / ESTADÍSTICAS ---
 router.get('/reports/stats', async (req, res) => {
   try {
@@ -294,6 +315,28 @@ router.get('/reports/stats', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener estadísticas: ' + err.message });
+  }
+});
+
+router.get('/reports/event-stats', async (req, res) => {
+  try {
+    const totalEncuestas = await EventSurvey.countDocuments();
+    const resultado = await EventSurvey.aggregate([
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: '$rating' }
+        }
+      }
+    ]);
+    const avgRating = resultado.length > 0 ? resultado[0].avgRating.toFixed(1) : '0.0';
+
+    res.json({
+      totalEncuestas,
+      avgRating
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener estadísticas del evento: ' + err.message });
   }
 });
 
