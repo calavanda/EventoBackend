@@ -7,6 +7,11 @@ const Encuesta = require('../models/Survey');
 const Admin = require('../models/Admin');
 const SecurityAlert = require('../models/SecurityAlert');
 const EventSurvey = require('../models/EventSurvey');
+const { requireAuth } = require('../middleware/auth');
+
+// --- RUTAS PROTEGIDAS CON AUTENTICACIÓN CENTRALIZADA (MASVS-AUTH / VULN-03) ---
+router.use('/admins', requireAuth);
+router.use('/security', requireAuth);
 
 // --- ADMINISTRADORES (RBAC) ---
 router.get('/admins', async (req, res) => {
@@ -14,7 +19,8 @@ router.get('/admins', async (req, res) => {
     const admins = await Admin.find().sort({ createdAt: -1 });
     res.json(admins);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener admins: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -24,7 +30,8 @@ router.post('/admins', async (req, res) => {
     await admin.save();
     res.status(201).json(admin);
   } catch (err) {
-    res.status(500).json({ error: 'Error al registrar admin: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -33,7 +40,8 @@ router.put('/admins/:id', async (req, res) => {
     const admin = await Admin.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(admin);
   } catch (err) {
-    res.status(500).json({ error: 'Error al actualizar admin: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -42,7 +50,8 @@ router.delete('/admins/:id', async (req, res) => {
     await Admin.findByIdAndDelete(req.params.id);
     res.json({ mensaje: 'Admin eliminado' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar admin: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -58,7 +67,8 @@ router.post('/admins/check-auth', async (req, res) => {
     
     res.json({ authorized: true, role: admin.rol, name: admin.nombre });
   } catch (err) {
-    res.status(500).json({ error: 'Error en validación: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -68,7 +78,8 @@ router.get('/participants', async (req, res) => {
     const participantes = await Participante.find().sort({ fechaRegistro: -1 });
     res.json(participantes);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener participantes: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -82,8 +93,8 @@ router.post('/participants', async (req, res) => {
     }
     res.status(201).json(participante);
   } catch (err) {
-    console.error('Error al crear participante:', err.message);
-    res.status(500).json({ error: 'Error al registrar participante: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -93,7 +104,8 @@ router.put('/participants/:id', async (req, res) => {
     if (!participante) return res.status(404).json({ error: 'Participante no encontrado' });
     res.json(participante);
   } catch (err) {
-    res.status(500).json({ error: 'Error al actualizar participante: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -102,7 +114,8 @@ router.delete('/participants/:id', async (req, res) => {
     await Participante.findByIdAndDelete(req.params.id);
     res.json({ mensaje: 'Participante eliminado correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar participante: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -125,8 +138,8 @@ router.post('/participants/bulk', async (req, res) => {
     const result = await Participante.insertMany(participantesConQR);
     res.status(201).json({ mensaje: `${result.length} participantes importados correctamente.`, count: result.length });
   } catch (err) {
-    console.error('Error en importación masiva:', err.message);
-    res.status(500).json({ error: 'Error al importar participantes: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -154,7 +167,8 @@ router.post('/email/send-qr', async (req, res) => {
         const response = await sendQREmail(email, nombre, qrUrl, subject, customMessage);
         results.push({ email, success: true, response });
       } catch (err) {
-        results.push({ email, success: false, error: err.message });
+        console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+        results.push({ email, success: false, error: 'Error al enviar correo' });
       }
     }
 
@@ -165,8 +179,8 @@ router.post('/email/send-qr', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Error al enviar correos masivos:', err);
-    res.status(500).json({ error: 'Error interno al enviar correos: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -176,7 +190,8 @@ router.get('/stands', async (req, res) => {
     const stands = await Stand.find().sort({ creadoEn: -1 });
     res.json(stands);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener stands: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -186,7 +201,8 @@ router.post('/stands', async (req, res) => {
     await stand.save();
     res.status(201).json(stand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al registrar stand: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -196,7 +212,8 @@ router.put('/stands/:id', async (req, res) => {
     if (!stand) return res.status(404).json({ error: 'Stand no encontrado' });
     res.json(stand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al actualizar stand: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -205,7 +222,8 @@ router.delete('/stands/:id', async (req, res) => {
     await Stand.findByIdAndDelete(req.params.id);
     res.json({ mensaje: 'Stand eliminado correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar stand: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -241,8 +259,8 @@ router.post('/visits/scan', async (req, res) => {
       visita
     });
   } catch (err) {
-    console.error('Error en escaneo:', err.message);
-    res.status(500).json({ error: 'Error al registrar visita: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -254,7 +272,8 @@ router.get('/surveys', async (req, res) => {
       .sort({ creadoEn: -1 });
     res.json(encuestas);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener encuestas: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -264,7 +283,8 @@ router.post('/surveys', async (req, res) => {
     await encuesta.save();
     res.status(201).json(encuesta);
   } catch (err) {
-    res.status(500).json({ error: 'Error al enviar encuesta: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -274,7 +294,8 @@ router.get('/event-surveys', async (req, res) => {
     const encuestas = await EventSurvey.find().sort({ creadoEn: -1 });
     res.json(encuestas);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener encuestas del evento: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -284,7 +305,8 @@ router.post('/event-surveys', async (req, res) => {
     await encuesta.save();
     res.status(201).json(encuesta);
   } catch (err) {
-    res.status(500).json({ error: 'Error al enviar encuesta del evento: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -314,7 +336,8 @@ router.get('/reports/stats', async (req, res) => {
       avgSatisfaction
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener estadísticas: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -336,7 +359,8 @@ router.get('/reports/event-stats', async (req, res) => {
       avgRating
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener estadísticas del evento: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -351,7 +375,8 @@ router.get('/reports/stand-visits', async (req, res) => {
     ]);
     res.json(visitasPorStand);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener visitas por stand: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -380,8 +405,6 @@ router.get('/reports/stand-analytics', async (req, res) => {
     ]);
 
     const surveyStats = await Encuesta.aggregate([
-      // Asumiendo que las encuestas también tienen un campo de fecha si se requiere filtrar,
-      // pero por ahora mantenemos el filtro básico de stand.
       { $group: { _id: '$stand', avgRating: { $avg: { $avg: ['$p1', '$p2', '$p3', '$p4', '$p5'] } } } },
       { $lookup: { from: 'stands', localField: '_id', foreignField: '_id', as: 'stand' } },
       { $unwind: { path: '$stand', preserveNullAndEmptyArrays: true } },
@@ -394,7 +417,6 @@ router.get('/reports/stand-analytics', async (req, res) => {
       { $match: { ...matchStage, escaneadoEn: { ...(matchStage.escaneadoEn || {}), $exists: true, $ne: null } } },
       {
         $project: {
-          // Truncamos a intervalos de 15 minutos
           timestamp: {
             $dateFromParts: {
               year: { $year: { date: "$escaneadoEn", timezone: "-06:00" } },
@@ -434,7 +456,8 @@ router.get('/reports/stand-analytics', async (req, res) => {
 
     res.json({ visitStats, surveyStats, peakVisits });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener analíticas: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -478,7 +501,8 @@ router.get('/reports/visitor-stats', async (req, res) => {
     ]);
     res.json(stats);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener estadísticas de visitantes: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -490,7 +514,8 @@ router.get('/reports/participant-history/:id', async (req, res) => {
       .sort({ escaneadoEn: 1 });
     res.json(history);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener historial: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -500,7 +525,8 @@ router.get('/security/alerts', async (req, res) => {
     const alerts = await SecurityAlert.find().sort({ timestamp: -1 });
     res.json(alerts);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener alertas: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 
@@ -509,7 +535,8 @@ router.delete('/security/alerts/clear', async (req, res) => {
     await SecurityAlert.deleteMany({});
     res.json({ message: 'Historial de seguridad limpiado correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al limpiar alertas: ' + err.message });
+    console.error('[OPERATIONAL ERROR]:', { timestamp: new Date().toISOString(), message: err.message });
+    res.status(500).json({ error: 'Ocurrio un error interno al procesar la solicitud. Por favor intente mas tarde.' });
   }
 });
 

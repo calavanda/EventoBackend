@@ -5,7 +5,6 @@ const path = require("path");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const apiRoutes = require("./routes/api");
-const Admin = require("./models/Admin");
 const { securityMiddleware } = require("./utils/security");
 
 // Solo carga el archivo .env si existe y no sobreescribe las variables de entorno (Railway establece sus propias)
@@ -20,13 +19,28 @@ if (fs.existsSync(envPath)) {
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
-// Middleware - permitir todo para evitar CORS
+// Restricción de orígenes cruzados (CORS) a dominios autorizados (MASVS-NETWORK / VULN-06)
+const defaultAllowedOrigins = [
+  'https://evento-francophonie.vercel.app',
+  'http://localhost:3000'
+];
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : defaultAllowedOrigins;
+
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Bloqueado por politica de seguridad de origen (CORS).'));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  }),
+  })
 );
 app.use(express.json());
 
@@ -42,46 +56,13 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "EventoBackend está corriendo", routes: ["/api/participants", "/api/stands", "/api/surveys", "/api/visits/scan", "/api/reports/stats", "/api/reports/stand-visits"] });
 });
 
-// Función para inicializar administradores
-const seedDefaultAdmins = async () => {
-  try {
-    const defaultAdmins = [
-      { nombre: 'Alfredo Admin (UTGZ)', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true }
-    ];
-    for (const adminData of defaultAdmins) {
-      const result = await Admin.findOneAndUpdate(
-        { email: adminData.email.toLowerCase() },
-        adminData,
-        { upsert: true, new: true }
-      );
-      console.log(`- Procesado admin: ${adminData.email} (ID: ${result._id})`);
-    }
-    console.log("✅ Administradores base verificados/creados correctamente.");
-    return true;
-  } catch (seedErr) {
-    console.error("Error en auto-seeding:", seedErr.message);
-    return false;
-  }
-};
-
-// Ruta de emergencia para forzar el seed
-app.get("/api/debug/seed", async (req, res) => {
-  const success = await seedDefaultAdmins();
-  if (success) {
-    res.json({ message: "Seed ejecutado con éxito" });
-  } else {
-    res.status(500).json({ error: "Error ejecutando el seed" });
-  }
-});
-
-// 404 (ayuda a diagnosticar rutas faltantes)
+// 404 (ayuda a diagnosticar rutas faltantes o eliminadas como /api/debug/seed)
 app.use((req, res) => {
   console.log(`404 - Ruta no encontrada: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
 });
 
 const mongoUri = process.env.MONGODB_URI;
-
 
 if (!mongoUri) {
   console.error("ERROR CRÍTICO: La variable de entorno MONGODB_URI no existe.");
@@ -93,7 +74,6 @@ if (!mongoUri) {
     .then(async () => {
       const dbName = mongoose.connection.name;
       console.log(`✅ Conectado a MongoDB. Base de datos: ${dbName}`);
-      await seedDefaultAdmins();
     })
     .catch((err) => {
       console.error("Detalles del error de conexión a MongoDB:", err.message);

@@ -5,9 +5,17 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const participants = [
-  { nombre: 'Admin Principal', email: '22610282@utgz.edu.mx', rol: 'admin', activo: true },
-  { nombre: 'Alfredo', email: 'si@gmail.com', rol: 'admin', activo: true },
+// Parametrización segura de credenciales iniciales (MASVS-CODE / VULN-04)
+const adminEmail = process.env.ADMIN_INITIAL_EMAIL;
+const adminName = process.env.ADMIN_INITIAL_NAME || 'Admin Principal';
+
+if (!adminEmail) {
+  console.error("Variable ADMIN_INITIAL_EMAIL requerida para aprovisionamiento seguro.");
+  process.exit(1);
+}
+
+const defaultAdmins = [
+  { nombre: adminName, email: adminEmail.toLowerCase().trim(), rol: 'admin', activo: true },
 ];
 
 async function seed() {
@@ -19,19 +27,19 @@ async function seed() {
     await mongoose.connect(uri);
     console.log('✅ Conectado a MongoDB');
     
-    for (const p of participants) {
+    for (const p of defaultAdmins) {
       await Admin.findOneAndUpdate(
         { email: p.email.toLowerCase() },
         p,
         { upsert: true, new: true }
       );
-      console.log(`Admin ${p.email} asegurado.`);
+      console.log(`Admin ${p.email} asegurado con éxito.`);
     }
     
-    console.log('Seed completado.');
+    console.log('Seed seguro completado.');
     process.exit(0);
   } catch (err) {
-    console.error(err);
+    console.error('Error durante ejecución de seed:', err.message);
     process.exit(1);
   }
 }
